@@ -1,5 +1,46 @@
-#login_button
+script(type='text/javascript')
+    $().ready(function() {
+        $('#main_view').hide();
+        $('#spinner').hide();
+    });
 
-#spinner(style="top: 500; left: 300;")
+    function toggleMainView() {
+         $('#login_view').hide();
+         $('#main_view').show();
+    }
+    
+    function toggleSpinner() {
+        if (document.spinner) {
+            document.spinner.stop();
+            delete document.spinner;
+            $('#spinner').hide();
+            $('#canvas').show();
+        } else {
+            $('#canvas').hide();
+            $('#spinner').show();
+            document.spinner = new Spinner().spin($('#spinner').get(0));
+        }
+    }
 
-canvas#canvas(width="1000", height="600", style="display: none");
+    function addToPlaylist(song) {
+        var caption = song.artist + " - " + song.title;
+        var referense = $("<a>").attr("href", "#").append(caption);
+        var li = $('<li>').append(referense).data("song", song);
+        $('#playlist ul').append(li);
+    }
+
+    function onPlaylistClicked(handler) {
+        $('#playlist li').click(function() {
+            handler($(this).data("song"));
+        }); 
+    }
+
+
+#login_view
+    #login_button
+
+#main_view
+    #spinner
+    canvas#canvas(width="1000", height="600");
+    #playlist
+        ul

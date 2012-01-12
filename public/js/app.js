@@ -38,8 +38,8 @@ function initCanvas() {
 function onLogin(r) {
     if (r.session) {
         console.log('User has logged in:', r.session.mid);
-        $('#login_button').css('display', 'none');
-        getSong();
+        toggleMainView();
+        getSongs();
     }
     else {
         console.log('auth failed');
@@ -47,29 +47,29 @@ function onLogin(r) {
     }
 }
 
-function getSong() {
+function getSongs() {
     VK.Api.call('audio.get', {
-            count: 1,
-            uid: 1070976
-        }, function(r) {
-            if (r.response && r.response.length > 0) {
-                // first song
-                getSamples(r.response[0].url);
-            }
+        count: 20
+    }, function(r) {
+        r.response.forEach(function(song) {
+            addToPlaylist(song);
         });
+
+        onPlaylistClicked(function(song) {
+            getSamples(song.url);
+        });
+    });
 }
 
 function getSamples(url) {
-    var spinner = new Spinner().spin($('#spinner').get(0));
+    toggleSpinner();
 
     $.ajax({
         type: 'POST',
         url: "/getsamples/",
         data: { url: url },
         success: function(r) {
-            
-            spinner.stop();
-            $('#spinner').css('display', 'none');
+            toggleSpinner();
             
             if (r.error) {
                 console.log('Error: ', r.error);
@@ -97,7 +97,7 @@ function playSong(url) {
     
     $('#canvas').click(function() {
         music.togglePause();
-    }).css('display', 'block');
+    });
 }
 
 function whilePlaying() {
