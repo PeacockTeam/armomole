@@ -6,7 +6,7 @@ var csv = require('csv'),
     exec = require('child_process').exec,
     storage = require('./storage.js');
 
-var version = 1.0;
+var version = "1.0.1";
 
 exports.getAudioSamples = function(url, result) {
    
@@ -34,33 +34,43 @@ exports.getAudioSamples = function(url, result) {
 };
 
 function makeCommand(url) {
-    return "./sonic-annotator -d vamp:qm-vamp-plugins:qm-barbeattracker:beats -w csv --csv-force " + url;
+    return "./sonic-annotator -T transforms.txt -w csv --csv-force " + url;
 }
 
-function makeCsvPath(url) {
+function makeCsvPaths(url) {
     var pathname = parseUrl(url).pathname;
     if (path.extname(pathname) != '.mp3') {
         throw new Error('invalid url');
     }
     var hash = path.basename(pathname, '.mp3');
-    return __dirname + '/' + hash + '_vamp_qm-vamp-plugins_qm-barbeattracker_beats.csv';
+    return { 
+        onsets: __dirname + '/' + hash + '_vamp_vamp-aubio_aubioonset_onsets.csv',
+        beats:  __dirname + '/' + hash + '_vamp_vamp-aubio_aubiotempo_beats.csv'
+    };
 }
 
 function processAudio(url, result) {
     
     var command = makeCommand(url);
-    var csvFile = makeCsvPath(url);
+    var csvFiles = makeCsvPaths(url);
 
     console.log(command);
-    console.log(csvFile);
+    console.log(csvFiles);
 
     exec(command, function (error) {
         if (error !== null) {
             result();
         } else {
-            parseFile(csvFile, function(samples) {
-                removeFile(csvFile);
-                result(samples);
+            parseFile(csvFiles.onsets, function(onsets) {
+                removeFile(csvFiles.onsets);
+
+                parseFile(csvFiles.beats, function(beats) {
+                    removeFile(csvFiles.beats);
+                    result({
+                        'onsets': onsets,
+                        'beats': beats
+                    });
+                });
             });
         }
     });

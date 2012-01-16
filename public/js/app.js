@@ -1,7 +1,9 @@
 var ctx;
+var music;
 
-var next_beat = 0;
-var beats;
+var samples;
+var next_beat;
+var next_onset;
 
 $().ready(function () {
     initVK();
@@ -33,6 +35,11 @@ function initSoundManager() {
 
 function initCanvas() {
     ctx = $('#canvas')[0].getContext("2d");
+    $('#canvas').click(function() {
+        if (music) {
+            music.togglePause();
+        }
+    });
 }
 
 function onLogin(r) {
@@ -56,9 +63,23 @@ function getSongs() {
         });
 
         onPlaylistClicked(function(song) {
+            resetState();
             getSamples(song.url);
         });
     });
+}
+
+function resetState() {
+    if (music) {
+        music.destruct();
+    }
+    resetCanvas();
+};
+
+function resetCanvas() {
+    next_beat = 0;
+    next_onset = 0;
+    fillBG('#ffffff');
 }
 
 function getSamples(url) {
@@ -74,7 +95,7 @@ function getSamples(url) {
             if (r.error) {
                 console.log('Error: ', r.error);
             } else {
-                beats = r.samples;
+                samples = r.samples;
                 playSong(url);
             }
         }
@@ -82,21 +103,17 @@ function getSamples(url) {
 }
 
 function playSong(url) {
-    var music = soundManager.createSound({
+    music = soundManager.createSound({
         id: 'music',
         url: url,
         volume: 100,
         autoLoad: true,
         stream: false,
         autoPlay: true,
-        whileloading: function() {
-            //console.log('Loading: ' + this.bytesLoaded + '/' + this.bytesTotal);
-        },
-        whileplaying: whilePlaying
-    });
-    
-    $('#canvas').click(function() {
-        music.togglePause();
+        whileplaying: whilePlaying,
+        onfinish: function() {
+            resetCanvas();
+        }
     });
 }
 
@@ -106,13 +123,24 @@ function whilePlaying() {
     function randomColor() {
         return "#"+((1<<24)*Math.random()|0).toString(16);
     }
-    
-    while (beats[next_beat][0] < now) {
+   
+    while (samples.beats[next_beat][0] < now) {
         var color = randomColor();
-        for (var i = 0; i < 1; i++) {
-            drawRandomCircle(300, color);
-        }
+        //for (var i = 0; i < 1; i++) {
+        //    drawRandomCircle(300, color);
+        //}
+        //fillBG(color);
+        drawRandomCircle(300, color);
         next_beat++;
+    }
+    
+    var color = randomColor();
+    while (samples.onsets[next_onset][0] < now) {
+        //for (var i = 0; i < 5; i++) {
+        //    drawRandomCircle(100, color);
+        //}
+        drawRandomCircle(100, color);
+        next_onset++;
     }
 }
 
@@ -122,7 +150,7 @@ function drawRandomCircle(radius, color) {
     ctx.arc(40 + 920*Math.random(), 40 + 520*Math.random(), radius, 0, Math.PI*2, true);
     ctx.closePath();
     ctx.fill();
-};
+}
 
 function fillBG(color) {
     ctx.fillStyle = color;
